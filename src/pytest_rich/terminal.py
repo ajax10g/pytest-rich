@@ -283,6 +283,8 @@ class RichTerminalReporter:
                     self.console.print(
                         Text("SUCCESS ", style="green"), Text(f"{nodeid}")
                     )
+                elif status == "fail":
+                    self.console.print(Text("FAILED ", style="red"), Text(f"{nodeid}"))
 
         for nodeid, errors in error_messages.items():
             self.console.print(
