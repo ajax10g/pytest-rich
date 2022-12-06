@@ -32,6 +32,12 @@ def pytest_addoption(parser):
         "--rich-capture=.txt    => 'pytest_rich-20200101_000000.txt'\n"
         "--rich-capture=txt     => 'pytest_rich-20200101_000000.txt'\n",
     )
+    group.addoption(
+        "--rich-tb",
+        action="store_true",
+        default=False,
+        help="Enable rich terminal traceback using pytest-rich",
+    )
 
 
 @pytest.hookimpl(trylast=True)

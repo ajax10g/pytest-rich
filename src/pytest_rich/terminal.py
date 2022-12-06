@@ -133,7 +133,7 @@ class RichTerminalReporter:
                 )
                 self.runtest_tasks_per_file[fn] = task
             self.overall_progress_task = self.runtest_progress.add_task(
-                "Progress", total=self.total_items_collected
+                description="Progress:", total=self.total_items_collected
             )
 
         self._update_task(nodeid)
@@ -195,7 +195,7 @@ class RichTerminalReporter:
         if self.runtest_progress is not None:
             self.runtest_progress.update(
                 self.overall_progress_task,
-                description=f"Percent: [green]{percent}%[/green]",
+                description=f"Progress: [green]{percent}%[/green]",
             )
 
     def pytest_sessionfinish(
@@ -208,14 +208,15 @@ class RichTerminalReporter:
 
         if self.no_summary is False:
             error_messages = {}
-            for index, report in enumerate(self.categorized_reports["failed"]):
-                if index == 0:
-                    self.console.print(Rule("FAILURES\n", style="bold red"))
-                nodeid = report.nodeid
-                assert isinstance(report.longrepr, ExceptionChainRepr)
-                tb = RichExceptionChainRepr(nodeid, report.longrepr)
-                error_messages[nodeid] = tb.error_messages
-                self.console.print(tb)
+            if self.config.getoption("rich_tb"):
+                for index, report in enumerate(self.categorized_reports["failed"]):
+                    if index == 0:
+                        self.console.print(Rule("FAILURES\n", style="bold red"))
+                    nodeid = report.nodeid
+                    assert isinstance(report.longrepr, ExceptionChainRepr)
+                    tb = RichExceptionChainRepr(nodeid, report.longrepr)
+                    error_messages[nodeid] = tb.error_messages
+                    self.console.print(tb)
 
             if self.verbosity_level >= 0:
                 self.print_summary(error_messages)
