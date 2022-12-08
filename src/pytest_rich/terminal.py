@@ -70,6 +70,22 @@ class RichTerminalReporter:
 
     def pytest_collectreport(self, report: pytest.CollectReport) -> None:
         items = [x for x in report.result if isinstance(x, pytest.Item)]
+
+        # clpham:
+        # if options --repeat-scope==session and --count>1; re-order the report.result to reflect the
+        # actual sequence of ran tests
+        # Example:  ['a1','a2','a3','b1','b2','b3','c1','c2','c3'] -> ['a1','b1','c1','a2','b2','c2','a3','b3','c3']
+        def reorder(l: list[str], n: int) -> list[str]:
+            ll = [l[i * n : (i + 1) * n] for i in range((len(l) + n - 1) // n)]
+            return [i for sub in list(zip(*ll)) for i in sub]
+
+        repeat_scope_session = (
+            self.config.getoption("--repeat-scope", False) == 'session'
+        )
+        repeat_count = self.config.getoption("--count", 1)
+        if repeat_scope_session and repeat_count > 1:
+            items = reorder(items, repeat_count)
+
         if items:
             for item in items:
                 self.items_per_file.setdefault(item.path, []).append(item)
@@ -121,7 +137,10 @@ class RichTerminalReporter:
         self, nodeid: str, location: Tuple[str, Optional[int], str]
     ) -> None:
         if self.runtest_progress is None:
-            self.runtest_progress = Progress(SpinnerColumn(), "{task.description}")
+            self.runtest_progress = Progress(
+                SpinnerColumn(),
+                "{task.description}",
+            )
             self.runtest_progress.start()
 
             for fn in self.items_per_file:
@@ -133,7 +152,8 @@ class RichTerminalReporter:
                 )
                 self.runtest_tasks_per_file[fn] = task
             self.overall_progress_task = self.runtest_progress.add_task(
-                description="Progress:", total=self.total_items_collected
+                description="Progress: [green]0%[/green]",
+                total=self.total_items_collected,
             )
 
         self._update_task(nodeid)
@@ -165,10 +185,17 @@ class RichTerminalReporter:
             status = self.status_per_item[item.nodeid]
             statuses.append(status)
             chars.append(self._get_status_char(status))
+
+        # clpham: only display the current test
         completed_count = [x for x in statuses if x in ("success", "fail")]
         completed = len(completed_count) == len(items)
-        percent = len(completed_count) * 100 // len(items)
-        description = f"[cyan][{percent:3d}%] [/cyan]{base_fn} " + "".join(chars)
+        # percent = len(completed_count) * 100 // len(items)
+        number_of_valid_chars = len([i for i in range(0, len(chars)) if chars[i] != ''])
+        description = (
+            # f"[cyan][{percent:3d}%] [/cyan]{nodeid} " + chars[number_of_valid_chars - 1]
+            f"{nodeid} "
+            + f"[bold]{chars[number_of_valid_chars - 1]}[/bold]"
+        )
         if self.runtest_progress is not None:
             self.runtest_progress.update(
                 task,
