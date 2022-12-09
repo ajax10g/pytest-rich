@@ -189,13 +189,15 @@ class RichTerminalReporter:
         # clpham: only display the current test
         completed_count = [x for x in statuses if x in ("success", "fail")]
         completed = len(completed_count) == len(items)
-        # percent = len(completed_count) * 100 // len(items)
         number_of_valid_chars = len([i for i in range(0, len(chars)) if chars[i] != ''])
-        description = (
-            # f"[cyan][{percent:3d}%] [/cyan]{nodeid} " + chars[number_of_valid_chars - 1]
-            f"{nodeid} "
-            + f"[bold]{chars[number_of_valid_chars - 1]}[/bold]"
-        )
+        if not completed:
+            description = (
+                # f"[cyan][{percent:3d}%] [/cyan]{nodeid} " + chars[number_of_valid_chars - 1]
+                f"{nodeid} "
+                + f"[bold]{chars[number_of_valid_chars - 1]}[/bold]"
+            )
+        else:
+            description = f"{base_fn}:  Done!"
         if self.runtest_progress is not None:
             self.runtest_progress.update(
                 task,
